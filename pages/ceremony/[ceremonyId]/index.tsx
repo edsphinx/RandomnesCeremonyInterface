@@ -6,10 +6,6 @@ import EmptyState from '~~/components/providers/empty-state';
 import { CeremonyUserData } from '~~/components/user-ui/CeremonyUserData';
 import { ContractLottoInteractionUser } from '~~/components/user-ui/ContractLottoInteractionUser';
 
-interface IParams {
-	ceremonyId?: string;
-}
-
 const RandomnessCeremonyUI: NextPage = () => {
 	const router = useRouter();
 	const { ceremonyId } = router.query;

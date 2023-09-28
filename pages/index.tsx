@@ -3,9 +3,6 @@ import { MetaHeader } from '~~/components/MetaHeader';
 import ClientOnly from '~~/components/providers/client-only';
 import { CeremonyList } from '~~/components/user-ui/CeremonyList';
 
-// import { CeremonyUserData } from '~~/components/user-ui/CeremonyUserData';
-// import { ContractLottoInteractionUser } from '~~/components/user-ui/ContractLottoInteractionUser';
-
 const RandomnessCeremonyUI: NextPage = () => {
 	return (
 		<>

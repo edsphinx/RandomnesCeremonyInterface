@@ -1,4 +1,4 @@
-import CountdownTimer from '../CountDownTimer';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import Marquee from 'react-fast-marquee';
 import { formatEther } from 'viem';
@@ -7,6 +7,7 @@ import {
 	useScaffoldContractRead,
 } from '~~/hooks/scaffold-eth';
 import { formatEpochTimestamp } from '~~/utils/ceremony-utils';
+import CeremonyTimer, { SimpleTimer } from '~~/utils/timer';
 
 interface IParams {
 	index: string;
@@ -15,6 +16,7 @@ interface IParams {
 const MARQUEE_PERIOD_IN_SEC = 5;
 
 export const CeremonyUserData = ({ index }: IParams) => {
+	const router = useRouter();
 	const [transitionEnabled, setTransitionEnabled] = useState(true);
 	const [isRightDirection, setIsRightDirection] = useState(false);
 	const [marqueeSpeed, setMarqueeSpeed] = useState(0);
@@ -77,12 +79,24 @@ export const CeremonyUserData = ({ index }: IParams) => {
 		// Render a loading state or return null
 		return <div>Loading...</div>;
 	} else if (randomness && ceremonies) {
-		const commitTime = Number(randomness?.[commitmentDeadline]);
-		const revealTime = Number(randomness?.[revealDeadline]);
+		const _now = new Date(Date.now());
+		// Prepare commit Time
+		const commitValueRaw = randomness?.[commitmentDeadline];
+		const commitNumber = Number(commitValueRaw);
+		const commitTime = new Date(0);
+		commitTime.setUTCSeconds(commitNumber);
+
+		// Prepare reveal Time
+		const revealValueRaw = randomness?.[revealDeadline];
+		const revealNumber = Number(revealValueRaw);
+		const revealTime = new Date(0);
+		revealTime.setUTCSeconds(revealNumber);
+
 		const _ticketPrice = ceremonies ? ceremonies?.[ticketPrice] : 0;
 		const ticketString = formatEther(BigInt(_ticketPrice));
 		const _stakePrice = ceremonies ? ceremonies?.[stakeAmount] : 0;
 		const stakeString = formatEther(BigInt(_stakePrice));
+
 		return (
 			<div className="flex flex-col justify-center items-center bg-[url('/assets/gradient-bg.png')] bg-[length:100%_100%] py-10 px-5 sm:px-0 lg:py-auto max-w-[100vw] ">
 				<div
@@ -140,7 +154,11 @@ export const CeremonyUserData = ({ index }: IParams) => {
 										className={i % 2 ? '-my-10' : ''}
 									>
 										<div className='px-4'>
-											{feistelRounds?.toString() || ' '}
+											{_now < commitTime && _now < revealTime
+												? 'Commit'
+												: _now > commitTime && _now < revealTime
+												? 'Reveal'
+												: 'Claim'}
 										</div>
 									</Marquee>
 								);
@@ -170,14 +188,6 @@ export const CeremonyUserData = ({ index }: IParams) => {
 							/>
 						</div>
 					</div>
-
-					<span className='text-l sm:text-xl text-black'>Commit Deadline:</span>
-					{formatEpochTimestamp(BigInt(randomness?.[commitmentDeadline]))}
-					<CountdownTimer durationInSeconds={commitTime} />
-					<div></div>
-					<span className='text-l sm:text-xl text-black'>Reveal Deadline:</span>
-					{formatEpochTimestamp(BigInt(randomness?.[revealDeadline]))}
-					<CountdownTimer durationInSeconds={revealTime} />
 				</div>
 			</div>
 		);

@@ -2,67 +2,64 @@ import { CopyIcon } from './assets/CopyIcon';
 import { DiamondIcon } from './assets/DiamondIcon';
 import { HareIcon } from './assets/HareIcon';
 import { ArrowSmallRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
-import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { formatEther, keccak256, stringToHex } from 'viem';
-import { GetBlockReturnType } from 'viem';
-import { createPublicClient, http } from 'viem';
-import { optimismGoerli } from 'viem/chains';
+// import { GetBlockReturnType } from 'viem';
+// import { createPublicClient, http } from 'viem';
+// import { optimismGoerli } from 'viem/chains';
 import { useAccount } from 'wagmi';
 import {
 	useScaffoldContractRead,
 	useScaffoldContractWrite,
 } from '~~/hooks/scaffold-eth';
 import { formatEpochTimestamp } from '~~/utils/ceremony-utils';
+import CeremonyTimer from '~~/utils/timer';
 
 interface IParams {
 	index: string;
 }
 
-const getBlock = async () => {
-	const publicClient = createPublicClient({
-		chain: optimismGoerli,
-		transport: http(),
-	});
+// const getBlock = async () => {
+// 	const publicClient = createPublicClient({
+// 		chain: optimismGoerli,
+// 		transport: http(),
+// 	});
 
-	return await publicClient.getBlock({ blockTag: 'latest' });
-};
+// 	return await publicClient.getBlock({ blockTag: 'latest' });
+// };
 
 export const ContractLottoInteractionUser = ({ index }: IParams) => {
+	const router = useRouter();
 	const { address } = useAccount();
 	const [visible, setVisible] = useState(true);
 	const [newCommit, setNewCommit] = useState('');
 	const [newReveal, setNewReveal] = useState('');
-	const [block, setBlock] = useState<GetBlockReturnType | null>(null);
-	const [loading, setLoading] = useState(true);
+	// const [block, setBlock] = useState<GetBlockReturnType | null>(null);
+	// const [loading, setLoading] = useState(true);
 	type ObjectKey = keyof typeof ceremonies;
 	const commitmentDeadline = '1' as ObjectKey;
 	const revealDeadline = '2' as ObjectKey;
 	const ticketPrice = '6' as ObjectKey;
 	const stakeAmount = '7' as ObjectKey;
 
-	useEffect(() => {
-		// Fetch block data when the component mounts
-		const fetchBlockData = async () => {
-			try {
-				const blockData = await getBlock();
-				setBlock(blockData);
-				setLoading(false);
-			} catch (error) {
-				console.error('Error fetching block data:', error);
-				setLoading(false);
-			}
-		};
+	// useEffect(() => {
+	// 	// Fetch block data when the component mounts
+	// 	const fetchBlockData = async () => {
+	// 		try {
+	// 			const blockData = await getBlock();
+	// 			setBlock(blockData);
+	// 			setLoading(false);
+	// 		} catch (error) {
+	// 			console.error('Error fetching block data:', error);
+	// 			setLoading(false);
+	// 		}
+	// 	};
 
-		fetchBlockData();
-	}, [newCommit, newReveal]);
+	// 	fetchBlockData();
+	// }, [newCommit, newReveal]);
 
-	// const { data: ceremonyCount } = useScaffoldContractRead({
-	// 	contractName: 'LottoAndNFTCeremony',
-	// 	functionName: 'ceremonyCount',
-	// });
-
-	// const currentCeremony = BigInt(index);
-	// ceremonyCount !== undefined && ceremonyCount > 0 ? ceremonyCount - 1n : 0n;
 	const currentCeremony = index !== undefined ? BigInt(index) : 0n;
 
 	const { data: ceremonies } = useScaffoldContractRead({
@@ -97,6 +94,7 @@ export const ContractLottoInteractionUser = ({ index }: IParams) => {
 			value: `${totalNumber}`,
 			onBlockConfirmation: (txnReceipt) => {
 				console.log('📦 Transaction blockHash', txnReceipt.blockHash);
+				toast(txnReceipt.blockHash);
 			},
 		});
 
@@ -111,21 +109,27 @@ export const ContractLottoInteractionUser = ({ index }: IParams) => {
 			],
 			onBlockConfirmation: (txnReceipt) => {
 				console.log('📦 Transaction blockHash', txnReceipt.blockHash);
+				toast(txnReceipt.blockHash);
 			},
 		});
 
-	if (loading) {
+	if (randomnessLoading) {
 		// Display a loading message or spinner while data is being fetched
 		return <div>Loading...</div>;
-	} else if (
-		block !== null &&
-		block !== undefined &&
-		block.timestamp !== null &&
-		randomness !== null &&
-		randomness !== undefined
-	) {
-		const commitTime = BigInt(randomness?.[commitmentDeadline]);
-		const revealTime = BigInt(randomness?.[revealDeadline]);
+	} else if (randomness !== null && randomness !== undefined) {
+		const _now = new Date(Date.now());
+		const nowepoch = Math.trunc(_now.getTime() / 1000);
+		// const commitTime = BigInt(randomness?.[commitmentDeadline]);
+		// const revealTime = BigInt(randomness?.[revealDeadline]);
+		const commitValueRaw = randomness?.[commitmentDeadline];
+		const commitNumber = Number(commitValueRaw);
+		const commitTime = new Date(0);
+		commitTime.setUTCSeconds(commitNumber);
+
+		const revealValueRaw = randomness?.[revealDeadline];
+		const revealNumber = Number(revealValueRaw);
+		const revealTime = new Date(0);
+		revealTime.setUTCSeconds(revealNumber);
 
 		return (
 			<div className='flex bg-base-300 relative pb-10'>
@@ -157,16 +161,38 @@ export const ContractLottoInteractionUser = ({ index }: IParams) => {
 							<XMarkIcon className='h-4 w-4' />
 						</button>
 					</div>
-					<div className='flex flex-col mt-6 px-7 py-8 bg-base-200 opacity-80 rounded-2xl shadow-lg border-2 border-primary'>
-						<span className='text-2xl sm:text-4xl text-black'>
-							Block Timestamp:
-						</span>
-						<span className='text-xl sm:text-3xl text-black'>
-							{formatEpochTimestamp(block?.timestamp)}
-						</span>
+					<div className='flex flex-col mt-6 px-7 pt-2 bg-base-200 opacity-80 rounded-2xl shadow-lg border-2 border-primary'>
+						{_now < commitTime && _now < revealTime ? (
+							<div className='justify-center items-center'>
+								<span className='text-l sm:text-xl text-black'>
+									Commit Deadline:
+								</span>
+								{formatEpochTimestamp(BigInt(commitNumber))}
+								<CeremonyTimer
+									expiryTimestamp={commitTime}
+									onClick={() => router.push(`/ceremony/${index}`)}
+								/>
+							</div>
+						) : _now > commitTime && _now < revealTime ? (
+							<div className='justify-center items-center'>
+								<span className='text-l sm:text-xl text-black'>
+									Reveal Deadline:{' '}
+									{formatEpochTimestamp(BigInt(randomness?.[revealDeadline]))}
+								</span>
+								<CeremonyTimer
+									expiryTimestamp={revealTime}
+									onClick={() => router.push(`/ceremony/${index}`)}
+								/>
+							</div>
+						) : (
+							<CeremonyTimer
+								expiryTimestamp={_now}
+								onClick={() => {}}
+							/>
+						)}
 					</div>
 
-					{block?.timestamp < commitTime && block?.timestamp < revealTime ? (
+					{_now < commitTime && _now < revealTime ? (
 						<div className='flex flex-col mt-6 px-7 py-8 bg-base-200 opacity-80 rounded-2xl shadow-lg border-2 border-primary'>
 							<span className='text-4xl sm:text-6xl text-black'>Commit_</span>
 
@@ -212,7 +238,7 @@ export const ContractLottoInteractionUser = ({ index }: IParams) => {
 						</div>
 					)}
 
-					{block?.timestamp > commitTime && block?.timestamp < revealTime ? (
+					{_now > commitTime && _now < revealTime ? (
 						<div className='flex flex-col mt-6 px-7 py-8 bg-base-200 opacity-80 rounded-2xl shadow-lg border-2 border-primary'>
 							<span className='text-4xl sm:text-6xl text-black'>Reveal_</span>
 
