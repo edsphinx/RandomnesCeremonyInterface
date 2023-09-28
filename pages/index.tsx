@@ -1,7 +1,10 @@
 import type { NextPage } from 'next';
 import { MetaHeader } from '~~/components/MetaHeader';
-import { CeremonyUserData } from '~~/components/user-ui/CeremonyUserData';
-import { ContractLottoInteractionUser } from '~~/components/user-ui/ContractLottoInteractionUser';
+import ClientOnly from '~~/components/providers/client-only';
+import { CeremonyList } from '~~/components/user-ui/CeremonyList';
+
+// import { CeremonyUserData } from '~~/components/user-ui/CeremonyUserData';
+// import { ContractLottoInteractionUser } from '~~/components/user-ui/ContractLottoInteractionUser';
 
 const RandomnessCeremonyUI: NextPage = () => {
 	return (
@@ -11,11 +14,12 @@ const RandomnessCeremonyUI: NextPage = () => {
 				description='Randomness Ceremony.'
 			></MetaHeader>
 			<div
-				className='grid lg:grid-cols-2 flex-grow'
-				data-theme='exampleUi'
+				className='grid flex-grow'
+				data-theme='pageUi'
 			>
-				<ContractLottoInteractionUser />
-				<CeremonyUserData />
+				<ClientOnly>
+					<CeremonyList />
+				</ClientOnly>
 			</div>
 		</>
 	);

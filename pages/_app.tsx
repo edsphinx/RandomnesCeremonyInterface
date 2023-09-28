@@ -56,7 +56,7 @@ const ScaffoldEthApp = ({ Component, pageProps }: AppProps) => {
 					<Header />
 					<main className={bai_jamjuree.className}>
 						<Component
-							className='relative flex flex-col flex-1'
+							className='relative  flex flex-col flex-1'
 							{...pageProps}
 						/>
 					</main>

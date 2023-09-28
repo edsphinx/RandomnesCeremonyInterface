@@ -3,7 +3,7 @@ import { DiamondIcon } from './assets/DiamondIcon';
 import { HareIcon } from './assets/HareIcon';
 import { ArrowSmallRightIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { useEffect, useState } from 'react';
-import { formatEther, hashMessage, keccak256, stringToHex } from 'viem';
+import { formatEther, keccak256, stringToHex } from 'viem';
 import { GetBlockReturnType } from 'viem';
 import { createPublicClient, http } from 'viem';
 import { optimismGoerli } from 'viem/chains';
@@ -14,6 +14,10 @@ import {
 } from '~~/hooks/scaffold-eth';
 import { formatEpochTimestamp } from '~~/utils/ceremony-utils';
 
+interface IParams {
+	index: string;
+}
+
 const getBlock = async () => {
 	const publicClient = createPublicClient({
 		chain: optimismGoerli,
@@ -23,7 +27,7 @@ const getBlock = async () => {
 	return await publicClient.getBlock({ blockTag: 'latest' });
 };
 
-export const ContractLottoInteractionUser = () => {
+export const ContractLottoInteractionUser = ({ index }: IParams) => {
 	const { address } = useAccount();
 	const [visible, setVisible] = useState(true);
 	const [newCommit, setNewCommit] = useState('');
@@ -52,13 +56,14 @@ export const ContractLottoInteractionUser = () => {
 		fetchBlockData();
 	}, [newCommit, newReveal]);
 
-	const { data: ceremonyCount } = useScaffoldContractRead({
-		contractName: 'LottoAndNFTCeremony',
-		functionName: 'ceremonyCount',
-	});
+	// const { data: ceremonyCount } = useScaffoldContractRead({
+	// 	contractName: 'LottoAndNFTCeremony',
+	// 	functionName: 'ceremonyCount',
+	// });
 
-	const currentCeremony =
-		ceremonyCount !== undefined && ceremonyCount > 0 ? ceremonyCount - 1n : 0n;
+	// const currentCeremony = BigInt(index);
+	// ceremonyCount !== undefined && ceremonyCount > 0 ? ceremonyCount - 1n : 0n;
+	const currentCeremony = index !== undefined ? BigInt(index) : 0n;
 
 	const { data: ceremonies } = useScaffoldContractRead({
 		contractName: 'LottoAndNFTCeremony',
