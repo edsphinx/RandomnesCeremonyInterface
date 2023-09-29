@@ -1,13 +1,14 @@
-import { useRouter } from 'next/navigation';
+import { ArrowSmallRightIcon } from '@heroicons/react/24/outline';
 import { useEffect, useRef, useState } from 'react';
 import Marquee from 'react-fast-marquee';
+import toast from 'react-hot-toast';
 import { formatEther } from 'viem';
+import { useAccount } from 'wagmi';
 import {
 	useAnimationConfig,
 	useScaffoldContractRead,
+	useScaffoldContractWrite,
 } from '~~/hooks/scaffold-eth';
-import { formatEpochTimestamp } from '~~/utils/ceremony-utils';
-import CeremonyTimer, { SimpleTimer } from '~~/utils/timer';
 
 interface IParams {
 	index: string;
@@ -16,7 +17,7 @@ interface IParams {
 const MARQUEE_PERIOD_IN_SEC = 5;
 
 export const CeremonyUserData = ({ index }: IParams) => {
-	const router = useRouter();
+	const { address } = useAccount();
 	const [transitionEnabled, setTransitionEnabled] = useState(true);
 	const [isRightDirection, setIsRightDirection] = useState(false);
 	const [marqueeSpeed, setMarqueeSpeed] = useState(0);
@@ -30,26 +31,56 @@ export const CeremonyUserData = ({ index }: IParams) => {
 	const ticketPrice = '6' as ObjectKey;
 	const stakeAmount = '7' as ObjectKey;
 
-	// const { data: ceremonyCount } = useScaffoldContractRead({
-	// 	contractName: 'LottoAndNFTCeremony',
-	// 	functionName: 'ceremonyCount',
-	// });
-
-	// const currentCeremony = BigInt(index);
-	// ceremonyCount !== undefined && ceremonyCount > 0 ? ceremonyCount - 1n : 0n;
 	const currentCeremony = index !== undefined ? BigInt(index) : 0n;
+
+	const { data: winner0, isLoading: winnerLoading0 } = useScaffoldContractRead({
+		contractName: 'LottoAndNFTCeremony',
+		functionName: 'getWinner',
+		args: [currentCeremony, 0],
+	});
+	const { data: winner1, isLoading: winnerLoading1 } = useScaffoldContractRead({
+		contractName: 'LottoAndNFTCeremony',
+		functionName: 'getWinner',
+		args: [currentCeremony, 1],
+	});
+	const { data: winner2, isLoading: winnerLoading2 } = useScaffoldContractRead({
+		contractName: 'LottoAndNFTCeremony',
+		functionName: 'getWinner',
+		args: [currentCeremony, 2],
+	});
+	if (winner0 !== undefined && winner1 !== undefined && winner2 !== undefined) {
+		console.log('ETH', winner0);
+		console.log('NFT', winner1);
+		console.log('Beer', winner2);
+	}
+
+	const { writeAsync: writeClaimETHAsync, isLoading: isClaimETHLoading } =
+		useScaffoldContractWrite({
+			contractName: 'LottoAndNFTCeremony',
+			functionName: 'claimETH',
+			args: [currentCeremony],
+			onBlockConfirmation: (txnReceipt) => {
+				console.log('📦 Transaction blockHash', txnReceipt.blockHash);
+				toast(txnReceipt.blockHash);
+			},
+		});
+
+	const { writeAsync: writeClaimNFTAsync, isLoading: isClaimNFTLoading } =
+		useScaffoldContractWrite({
+			contractName: 'LottoAndNFTCeremony',
+			functionName: 'claimNFT',
+			args: [currentCeremony],
+			onBlockConfirmation: (txnReceipt) => {
+				console.log('📦 Transaction blockHash', txnReceipt.blockHash);
+				toast(txnReceipt.blockHash);
+			},
+		});
 
 	const { data: randomness, isLoading: randomnessLoading } =
 		useScaffoldContractRead({
 			contractName: 'RandomnessCeremony',
 			functionName: 'randomness',
 			args: [currentCeremony],
-		});
-
-	const { data: feistelRounds, isLoading: isGreetingLoading } =
-		useScaffoldContractRead({
-			contractName: 'LottoAndNFTCeremony',
-			functionName: 'feistelRounds',
 		});
 
 	const { data: ceremonies, isLoading: ceremoniesLoading } =
@@ -62,7 +93,7 @@ export const CeremonyUserData = ({ index }: IParams) => {
 	const { showAnimation } = useAnimationConfig(index);
 
 	const showTransition =
-		transitionEnabled && !!feistelRounds && !isGreetingLoading;
+		transitionEnabled && !!currentCeremony && !ceremoniesLoading;
 
 	useEffect(() => {
 		if (transitionEnabled && containerRef.current && greetingRef.current) {
@@ -129,63 +160,108 @@ export const CeremonyUserData = ({ index }: IParams) => {
 					<div>Ticket Price: {ticketString} ETH</div>
 					<div>Stake Amount: {stakeString} ETH</div>
 
-					<div className='mt-3 border border-primary bg-neutral rounded-3xl text-secondary  overflow-hidden text-[116px] whitespace-nowrap w-full uppercase tracking-tighter font-bai-jamjuree leading-tight'>
-						<div
-							className='relative overflow-x-hidden'
-							ref={containerRef}
-						>
-							{/* for speed calculating purposes */}
+					{_now > commitTime && _now > revealTime && winner0 === undefined ? (
+						<div className='mt-3 border border-primary bg-neutral rounded-3xl text-secondary  overflow-hidden text-[116px] whitespace-nowrap w-full uppercase tracking-tighter font-bai-jamjuree leading-tight'>
 							<div
-								className='absolute -left-[9999rem]'
-								ref={greetingRef}
+								className='relative overflow-x-hidden'
+								ref={containerRef}
 							>
-								<div className='px-4'>{feistelRounds?.toString()}</div>
+								{/* for speed calculating purposes */}
+								<div
+									className='absolute -left-[9999rem]'
+									ref={greetingRef}
+								>
+									<div className='px-4'>{currentCeremony.toString()}</div>
+								</div>
+								{new Array(3).fill('').map((_, i) => {
+									const isLineRightDirection =
+										i % 2 ? isRightDirection : !isRightDirection;
+									return (
+										<Marquee
+											key={i}
+											direction={isLineRightDirection ? 'right' : 'left'}
+											gradient={false}
+											play={showTransition}
+											speed={marqueeSpeed}
+											className={i % 2 ? '-my-10' : ''}
+										>
+											<div className='px-4'>
+												{_now < commitTime && _now < revealTime
+													? 'Commit'
+													: _now > commitTime && _now < revealTime
+													? 'Reveal'
+													: 'Claim'}
+											</div>
+										</Marquee>
+									);
+								})}
 							</div>
-							{new Array(3).fill('').map((_, i) => {
-								const isLineRightDirection =
-									i % 2 ? isRightDirection : !isRightDirection;
-								return (
-									<Marquee
-										key={i}
-										direction={isLineRightDirection ? 'right' : 'left'}
-										gradient={false}
-										play={showTransition}
-										speed={marqueeSpeed}
-										className={i % 2 ? '-my-10' : ''}
-									>
-										<div className='px-4'>
-											{_now < commitTime && _now < revealTime
-												? 'Commit'
-												: _now > commitTime && _now < revealTime
-												? 'Reveal'
-												: 'Claim'}
-										</div>
-									</Marquee>
-								);
-							})}
 						</div>
-					</div>
+					) : winner0 !== undefined ? (
+						<>
+							<div className='mt-10 text-xl'>ETH Winner</div>
+							<div className='mt-3 border border-primary bg-neutral rounded-3xl text-base px-4  overflow-hidden text-[116px] whitespace-nowrap w-full uppercase tracking-tighter font-bai-jamjuree leading-tight'>
+								<div>{winner0}</div>
+							</div>
+							<div className='mt-5 text-xl'>NFT Winner</div>
+							<div className='mt-3 border border-primary bg-neutral rounded-3xl text-base px-4  overflow-hidden text-[116px] whitespace-nowrap w-full uppercase tracking-tighter font-bai-jamjuree leading-tight'>
+								<div>{winner1}</div>
+							</div>
+							<div className='mt-5 text-xl'>Has to pay beer</div>
+							<div className='mt-3 border border-primary bg-neutral rounded-3xl text-base px-4  overflow-hidden text-[116px] whitespace-nowrap w-full uppercase tracking-tighter font-bai-jamjuree leading-tight'>
+								<div>{winner2}</div>
+							</div>
+						</>
+					) : (
+						<div className='text-3xl'>HOLA</div>
+					)}
 
 					<div className='mt-3 flex items-end justify-between'>
-						<button
-							className={`btn btn-circle btn-ghost border border-primary hover:border-primary w-12 h-12 p-1 bg-neutral flex items-center ${
-								isRightDirection ? 'justify-start' : 'justify-end'
-							}`}
-							onClick={() => {
-								if (transitionEnabled) {
-									setIsRightDirection(!isRightDirection);
-								}
-							}}
-						>
-							<div className='border border-primary rounded-full bg-secondary w-2 h-2' />
-						</button>
-						<div className='w-44 p-0.5 flex items-center bg-neutral border border-primary rounded-full'>
-							<div
-								className='h-1.5 border border-primary rounded-full bg-secondary animate-grow'
-								style={{
-									animationPlayState: showTransition ? 'running' : 'paused',
-								}}
-							/>
+						<div className='mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-5'>
+							{address === winner0 ? (
+								<div className='flex rounded-full border border-primary p-1 flex-shrink-0'>
+									<div className='flex rounded-full border-2 border-primary p-1'>
+										<button
+											className='btn btn-primary rounded-full capitalize font-normal font-white w-26 flex items-center gap-1 hover:gap-2 transition-all tracking-widest'
+											onClick={() => writeClaimETHAsync()}
+											disabled={isClaimETHLoading}
+										>
+											{isClaimETHLoading ? (
+												<span className='loading loading-spinner loading-sm'></span>
+											) : (
+												<>
+													Claim ETH{' '}
+													<ArrowSmallRightIcon className='w-3 h-3 mt-0.5' />
+												</>
+											)}
+										</button>
+									</div>
+								</div>
+							) : (
+								<></>
+							)}
+							{address === winner1 ? (
+								<div className='flex rounded-full border border-primary p-1 flex-shrink-0'>
+									<div className='flex rounded-full border-2 border-primary p-1'>
+										<button
+											className='btn btn-primary rounded-full capitalize font-normal font-white w-26 flex items-center gap-1 hover:gap-2 transition-all tracking-widest'
+											onClick={() => writeClaimNFTAsync()}
+											disabled={isClaimNFTLoading}
+										>
+											{isClaimNFTLoading ? (
+												<span className='loading loading-spinner loading-sm'></span>
+											) : (
+												<>
+													Claim NFT{' '}
+													<ArrowSmallRightIcon className='w-3 h-3 mt-0.5' />
+												</>
+											)}
+										</button>
+									</div>
+								</div>
+							) : (
+								<></>
+							)}
 						</div>
 					</div>
 				</div>
