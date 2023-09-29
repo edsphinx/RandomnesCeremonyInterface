@@ -145,6 +145,8 @@ export const CeremonyUserData = ({ index }: IParams) => {
 
 		const nftCreator = ceremonies?.[nftCreatorAddress];
 
+		console.log('typeof address', typeof address);
+		console.log('typeof nftCreator', typeof nftCreator);
 		console.log('ceremony', address === nftCreator);
 		console.log('nftCreatorAddress', nftCreator);
 
@@ -294,7 +296,7 @@ export const CeremonyUserData = ({ index }: IParams) => {
 												<span className='loading loading-spinner loading-sm'></span>
 											) : (
 												<>
-													Claim NFT{' '}
+													Claim ETH Creator{' '}
 													<ArrowSmallRightIcon className='w-3 h-3 mt-0.5' />
 												</>
 											)}
