@@ -200,7 +200,7 @@ export const ContractLottoInteractionUser = ({ index }: IParams) => {
 								<input
 									type='text'
 									placeholder='Escribe tu palabra secreta'
-									className="input font-bai-jamjuree w-full px-5 bg-[url('/assets/gradient-bg.png')] bg-[length:100%_100%] border border-primary text-lg sm:text-2xl placeholder-white uppercase"
+									className="input font-bai-jamjuree w-full px-5 bg-[url('/assets/gradient-bg.png')] bg-[length:100%_100%] border border-primary text-lg sm:text-2xl placeholder-white"
 									onChange={(e) => setNewCommit(e.target.value)}
 								/>
 								<div className='flex rounded-full border border-primary p-1 flex-shrink-0'>
@@ -246,7 +246,7 @@ export const ContractLottoInteractionUser = ({ index }: IParams) => {
 								<input
 									type='text'
 									placeholder='Escribe tu palabra secreta'
-									className="input font-bai-jamjuree w-full px-5 bg-[url('/assets/gradient-bg.png')] bg-[length:100%_100%] border border-primary text-lg sm:text-2xl placeholder-white uppercase"
+									className="input font-bai-jamjuree w-full px-5 bg-[url('/assets/gradient-bg.png')] bg-[length:100%_100%] border border-primary text-lg sm:text-2xl placeholder-white"
 									onChange={(e) => setNewReveal(e.target.value)}
 								/>
 								<div className='flex rounded-full border border-primary p-1 flex-shrink-0'>
@@ -271,7 +271,7 @@ export const ContractLottoInteractionUser = ({ index }: IParams) => {
 
 							<div className='mt-4 flex gap-2 items-start'>
 								<span className='text-sm leading-tight'>Precio:</span>
-								<div className='badge badge-warning'>0.0001 ETH + Gas</div>
+								<div className='badge badge-warning'>0.0001 Gas</div>
 							</div>
 						</div>
 					) : (
