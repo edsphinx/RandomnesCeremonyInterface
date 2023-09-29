@@ -30,6 +30,8 @@ export const CeremonyUserData = ({ index }: IParams) => {
 	const revealDeadline = '2' as ObjectKey;
 	const ticketPrice = '6' as ObjectKey;
 	const stakeAmount = '7' as ObjectKey;
+	type ObjectKeyC = keyof typeof ceremonies;
+	const nftCreatorAddress = '10' as ObjectKeyC;
 
 	const currentCeremony = index !== undefined ? BigInt(index) : 0n;
 
@@ -75,6 +77,19 @@ export const CeremonyUserData = ({ index }: IParams) => {
 				toast(txnReceipt.blockHash);
 			},
 		});
+
+	const {
+		writeAsync: writeClaimNFTCreatorAsync,
+		isLoading: isClaimNFTCreatorLoading,
+	} = useScaffoldContractWrite({
+		contractName: 'LottoAndNFTCeremony',
+		functionName: 'claimNFTCreatorETH',
+		args: [currentCeremony],
+		onBlockConfirmation: (txnReceipt) => {
+			console.log('📦 Transaction blockHash', txnReceipt.blockHash);
+			toast(txnReceipt.blockHash);
+		},
+	});
 
 	const { data: randomness, isLoading: randomnessLoading } =
 		useScaffoldContractRead({
@@ -128,6 +143,11 @@ export const CeremonyUserData = ({ index }: IParams) => {
 		const _stakePrice = ceremonies ? ceremonies?.[stakeAmount] : 0;
 		const stakeString = formatEther(BigInt(_stakePrice));
 
+		const nftCreator = ceremonies?.[nftCreatorAddress];
+
+		console.log('ceremony', address === nftCreator);
+		console.log('nftCreatorAddress', nftCreator);
+
 		return (
 			<div className="flex flex-col justify-center items-center bg-[url('/assets/gradient-bg.png')] bg-[length:100%_100%] py-10 px-5 sm:px-0 lg:py-auto max-w-[100vw] ">
 				<div
@@ -160,7 +180,7 @@ export const CeremonyUserData = ({ index }: IParams) => {
 					<div>Ticket Price: {ticketString} ETH</div>
 					<div>Stake Amount: {stakeString} ETH</div>
 
-					{_now > commitTime && _now > revealTime && winner0 === undefined ? (
+					{_now < commitTime && _now < revealTime && winner0 === undefined ? (
 						<div className='mt-3 border border-primary bg-neutral rounded-3xl text-secondary  overflow-hidden text-[116px] whitespace-nowrap w-full uppercase tracking-tighter font-bai-jamjuree leading-tight'>
 							<div
 								className='relative overflow-x-hidden'
@@ -249,6 +269,28 @@ export const CeremonyUserData = ({ index }: IParams) => {
 											disabled={isClaimNFTLoading}
 										>
 											{isClaimNFTLoading ? (
+												<span className='loading loading-spinner loading-sm'></span>
+											) : (
+												<>
+													Claim NFT{' '}
+													<ArrowSmallRightIcon className='w-3 h-3 mt-0.5' />
+												</>
+											)}
+										</button>
+									</div>
+								</div>
+							) : (
+								<></>
+							)}
+							{address === nftCreator ? (
+								<div className='flex rounded-full border border-primary p-1 flex-shrink-0'>
+									<div className='flex rounded-full border-2 border-primary p-1'>
+										<button
+											className='btn btn-primary rounded-full capitalize font-normal font-white w-26 flex items-center gap-1 hover:gap-2 transition-all tracking-widest'
+											onClick={() => writeClaimNFTCreatorAsync()}
+											disabled={isClaimNFTCreatorLoading}
+										>
+											{isClaimNFTCreatorLoading ? (
 												<span className='loading loading-spinner loading-sm'></span>
 											) : (
 												<>
